@@ -1,6 +1,6 @@
 {
   "name": "socket.io-circular-parser",
-  "version": "3.1.2",
+  "version": "3.1.2-patch1",
   "description": "socket.io protocol parser that supports circular references",
   "repository": {
     "type": "git",

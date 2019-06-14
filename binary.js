@@ -6,6 +6,7 @@
 
 var isArray = require('isarray');
 var isBuf = require('./is-buffer');
+var CircularJSON = require('circular-json')
 var toString = Object.prototype.toString;
 var withNativeBlob = typeof global.Blob === 'function' || toString.call(global.Blob) === '[object BlobConstructor]';
 var withNativeFile = typeof global.File === 'function' || toString.call(global.File) === '[object FileConstructor]';
@@ -22,7 +23,7 @@ var withNativeFile = typeof global.File === 'function' || toString.call(global.F
 
 exports.deconstructPacket = function(packet) {
   var buffers = [];
-  var packetData = packet.data;
+  var packetData = JSON.parse(CircularJSON.stringify(packet.data))
   var pack = packet;
   pack.data = _deconstructPacket(packetData, buffers);
   pack.attachments = buffers.length; // number of binary 'attachments'
@@ -62,7 +63,7 @@ function _deconstructPacket(data, buffers) {
  */
 
 exports.reconstructPacket = function(packet, buffers) {
-  packet.data = _reconstructPacket(packet.data, buffers);
+  packet.data = CircularJSON.parse(JSON.stringify(_reconstructPacket(packet.data, buffers)));
   packet.attachments = undefined; // no longer useful
   return packet;
 };
@@ -96,8 +97,9 @@ function _reconstructPacket(data, buffers) {
  */
 
 exports.removeBlobs = function(data, callback) {
-  function _removeBlobs(obj, curKey, containingObject) {
-    if (!obj) return obj;
+  function _removeBlobs(obj, curKey, containingObject, completed) {
+    if (!obj || completed.includes(obj)) return obj;
+    completed.push(obj)
 
     // convert any blob
     if ((withNativeBlob && obj instanceof Blob) ||
@@ -123,18 +125,18 @@ exports.removeBlobs = function(data, callback) {
       fileReader.readAsArrayBuffer(obj); // blob -> arraybuffer
     } else if (isArray(obj)) { // handle array
       for (var i = 0; i < obj.length; i++) {
-        _removeBlobs(obj[i], i, obj);
+        _removeBlobs(obj[i], i, obj, completed);
       }
     } else if (typeof obj === 'object' && !isBuf(obj)) { // and object
       for (var key in obj) {
-        _removeBlobs(obj[key], key, obj);
+        _removeBlobs(obj[key], key, obj, completed);
       }
     }
   }
 
   var pendingBlobs = 0;
   var bloblessData = data;
-  _removeBlobs(bloblessData);
+  _removeBlobs(bloblessData, null, null, []);
   if (!pendingBlobs) {
     callback(bloblessData);
   }
