@@ -1,5 +1,5 @@
 var parser = require('../index.js');
-var expect = require('expect.js');
+var expect = require('expect');
 var helpers = require('./helpers.js');
 var encode = parser.encode;
 var decode = parser.decode;

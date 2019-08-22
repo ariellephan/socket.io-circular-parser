@@ -4,6 +4,7 @@
  * Module requirements
  */
 
+var CircularJSON = require('circular-json')
 var isArray = require('isarray');
 var isBuf = require('./is-buffer');
 var toString = Object.prototype.toString;
@@ -24,33 +25,20 @@ exports.deconstructPacket = function(packet) {
   var buffers = [];
   var packetData = packet.data;
   var pack = packet;
-  pack.data = _deconstructPacket(packetData, buffers);
+  pack.data = CircularJSON.stringify(packetData, function(_, data) {
+    var isDataBuf = isBuf(data)
+
+    if (isDataBuf || (data && typeof data === 'object' && Object.keys(data).length === 2 && data.type === 'Buffer' && data.data)) {
+      var placeholder = { _placeholder: true, num: buffers.length };
+      buffers.push(isDataBuf ? data : Buffer.from(data.data));
+      return placeholder;
+    }
+
+    return data
+  })
   pack.attachments = buffers.length; // number of binary 'attachments'
   return {packet: pack, buffers: buffers};
 };
-
-function _deconstructPacket(data, buffers) {
-  if (!data) return data;
-
-  if (isBuf(data)) {
-    var placeholder = { _placeholder: true, num: buffers.length };
-    buffers.push(data);
-    return placeholder;
-  } else if (isArray(data)) {
-    var newData = new Array(data.length);
-    for (var i = 0; i < data.length; i++) {
-      newData[i] = _deconstructPacket(data[i], buffers);
-    }
-    return newData;
-  } else if (typeof data === 'object' && !(data instanceof Date)) {
-    var newData = {};
-    for (var key in data) {
-      newData[key] = _deconstructPacket(data[key], buffers);
-    }
-    return newData;
-  }
-  return data;
-}
 
 /**
  * Reconstructs a binary packet from its placeholder packet and buffers
@@ -62,28 +50,16 @@ function _deconstructPacket(data, buffers) {
  */
 
 exports.reconstructPacket = function(packet, buffers) {
-  packet.data = _reconstructPacket(packet.data, buffers);
+  packet.data = CircularJSON.parse(packet.data, function(_, data) {
+    if (data && data._placeholder) {
+      return buffers[data.num]
+    }
+
+    return data
+  })
   packet.attachments = undefined; // no longer useful
   return packet;
 };
-
-function _reconstructPacket(data, buffers) {
-  if (!data) return data;
-
-  if (data && data._placeholder) {
-    return buffers[data.num]; // appropriate buffer (should be natural order anyway)
-  } else if (isArray(data)) {
-    for (var i = 0; i < data.length; i++) {
-      data[i] = _reconstructPacket(data[i], buffers);
-    }
-  } else if (typeof data === 'object') {
-    for (var key in data) {
-      data[key] = _reconstructPacket(data[key], buffers);
-    }
-  }
-
-  return data;
-}
 
 /**
  * Asynchronously removes Blobs or Files from data via
@@ -96,8 +72,16 @@ function _reconstructPacket(data, buffers) {
  */
 
 exports.removeBlobs = function(data, callback) {
-  function _removeBlobs(obj, curKey, containingObject) {
-    if (!obj) return obj;
+  function _removeBlobs(obj, parents, curKey, containingObject) {
+    if (!obj) return;
+
+    if (typeof obj === 'object') {
+      if (parents.includes(obj)) {
+        return
+      }
+
+      parents = [obj].concat(parents)
+    }
 
     // convert any blob
     if ((withNativeBlob && obj instanceof Blob) ||
@@ -123,18 +107,18 @@ exports.removeBlobs = function(data, callback) {
       fileReader.readAsArrayBuffer(obj); // blob -> arraybuffer
     } else if (isArray(obj)) { // handle array
       for (var i = 0; i < obj.length; i++) {
-        _removeBlobs(obj[i], i, obj);
+        _removeBlobs(obj[i], parents, i, obj);
       }
     } else if (typeof obj === 'object' && !isBuf(obj)) { // and object
       for (var key in obj) {
-        _removeBlobs(obj[key], key, obj);
+        _removeBlobs(obj[key], parents, key, obj);
       }
     }
   }
 
   var pendingBlobs = 0;
   var bloblessData = data;
-  _removeBlobs(bloblessData);
+  _removeBlobs(bloblessData, []);
   if (!pendingBlobs) {
     callback(bloblessData);
   }

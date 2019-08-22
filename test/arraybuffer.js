@@ -1,5 +1,5 @@
 var parser = require('../index.js');
-var expect = require('expect.js');
+var expect = require('expect');
 var helpers = require('./helpers.js');
 var encoder = new parser.Encoder();
 
@@ -51,7 +51,7 @@ describe('parser', function() {
       decoder.add(encodedPackets[0]); // add metadata
       decoder.add(encodedPackets[1]); // add first attachment
       decoder.destroy(); // destroy before all data added
-      expect(decoder.reconstructor.buffers.length).to.be(0); // expect that buffer is clean
+      expect(decoder.reconstructor.buffers.length).toBe(0); // expect that buffer is clean
     });
   });
 });

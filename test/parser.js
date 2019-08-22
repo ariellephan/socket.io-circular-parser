@@ -1,5 +1,5 @@
 var parser = require('../index.js');
-var expect = require('expect.js');
+var expect = require('expect');
 var helpers = require('./helpers.js');
 var encode = parser.encode;
 var decode = parser.decode;
@@ -7,11 +7,11 @@ var decode = parser.decode;
 describe('parser', function(){
 
   it('exposes types', function(){
-    expect(parser.CONNECT).to.be.a('number');
-    expect(parser.DISCONNECT).to.be.a('number');
-    expect(parser.EVENT).to.be.a('number');
-    expect(parser.ACK).to.be.a('number');
-    expect(parser.ERROR).to.be.a('number');
+    expect(parser.CONNECT).toBeA('number');
+    expect(parser.DISCONNECT).toBeA('number');
+    expect(parser.EVENT).toBeA('number');
+    expect(parser.ACK).toBeA('number');
+    expect(parser.ERROR).toBeA('number');
   });
 
   it('encodes connection', function(){
@@ -56,17 +56,17 @@ describe('parser', function(){
       var decoder = new parser.Decoder();
       decoder.add('5');
     } catch(e){
-      expect(e.message).to.match(/Illegal/);
+      expect(e.message).toMatch(/Illegal/);
     }
   });
 
-  context.only('performance', function() {
+  context('performance', function() {
     this.timeout(100000)
 
     it('does not choke on large objects', function() {
       var data = {
         a: Array(100).fill(true).reduce(function(p, _, i) {
-          p[i] = Array(10).fill(true)
+          p[i] = Array(100).fill(true)
           return p
         }, {})
       }
@@ -77,12 +77,13 @@ describe('parser', function(){
       var msg = {
         type: parser.BINARY_EVENT,
         data: data,
+        id: 127,
         nsp: '/'
       }
 
       var start = Date.now()
 
-      return Promise.all(Array(1).fill(true).map(function() {
+      return Promise.all(Array(1000).fill(true).map(function() {
         return new Promise(function(resolve) {
           helpers.test_bin(msg, resolve)
         })
