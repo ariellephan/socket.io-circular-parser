@@ -17,7 +17,7 @@ module.exports.test = function(obj, cb){
 }
 
 // tests encoding of binary packets
-module.exports.test_bin = function test_bin(obj) {
+module.exports.test_bin = function test_bin(obj, cb) {
   var originalData = obj.data;
   encoder.encode(obj, function(encodedPackets) {
     var decoder = new parser.Decoder();
@@ -25,6 +25,8 @@ module.exports.test_bin = function test_bin(obj) {
       obj.data = originalData;
       obj.attachments = undefined;
       expect(obj).to.eql(packet);
+
+      cb && cb()
     });
 
     for (var i = 0; i < encodedPackets.length; i++) {

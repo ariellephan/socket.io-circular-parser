@@ -64,22 +64,27 @@ describe('parser', function(){
     this.timeout(100000)
 
     it('does not choke on large objects', function() {
-      var data = Array(100).fill(true).reduce(function(p, _, i) {
-        p[i] = Array(10).fill(true)
-        return p
-      }, {})
+      var data = {
+        a: Array(100).fill(true).reduce(function(p, _, i) {
+          p[i] = Array(10).fill(true)
+          return p
+        }, {})
+      }
+
+      data.a.a = data.a
+      data.bin = new Buffer('xxx', 'utf8')
 
       var msg = {
-        type: parser.EVENT,
+        type: parser.BINARY_EVENT,
         data: data,
         nsp: '/'
       }
 
       var start = Date.now()
 
-      return Promise.all(Array(1000).fill(true).map(function() {
+      return Promise.all(Array(1).fill(true).map(function() {
         return new Promise(function(resolve) {
-          helpers.test(msg, resolve)
+          helpers.test_bin(msg, resolve)
         })
       }))
       .then(function() {
