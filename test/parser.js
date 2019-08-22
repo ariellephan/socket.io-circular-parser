@@ -61,7 +61,7 @@ describe('parser', function(){
   });
 
   context('performance', function() {
-    this.timeout(100000)
+    this.timeout(25 * 1000)
 
     it('does not choke on large objects', function() {
       var data = {
