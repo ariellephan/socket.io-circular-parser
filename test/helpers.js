@@ -3,11 +3,13 @@ var expect = require('expect.js');
 var encoder = new parser.Encoder();
 
 // tests encoding and decoding a single packet
-module.exports.test = function(obj){
+module.exports.test = function(obj, cb){
   encoder.encode(obj, function(encodedPackets) {
     var decoder = new parser.Decoder();
     decoder.on('decoded', function(packet) {
       expect(packet).to.eql(obj);
+
+      cb && cb()
     });
 
     decoder.add(encodedPackets[0]);

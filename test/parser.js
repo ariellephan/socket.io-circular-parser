@@ -59,4 +59,32 @@ describe('parser', function(){
       expect(e.message).to.match(/Illegal/);
     }
   });
+
+  context.only('performance', function() {
+    this.timeout(100000)
+
+    it('does not choke on large objects', function() {
+      var data = Array(100).fill(true).reduce(function(p, _, i) {
+        p[i] = Array(10).fill(true)
+        return p
+      }, {})
+
+      var msg = {
+        type: parser.EVENT,
+        data: data,
+        nsp: '/'
+      }
+
+      var start = Date.now()
+
+      return Promise.all(Array(1000).fill(true).map(function() {
+        return new Promise(function(resolve) {
+          helpers.test(msg, resolve)
+        })
+      }))
+      .then(function() {
+        console.log(`Took ${Date.now() - start} ms to complete`)
+      })
+    })
+  })
 });
