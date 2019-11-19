@@ -7,7 +7,20 @@ describe('parser', function() {
   it('encodes an ArrayBuffer', function() {
     var packet = {
       type: parser.BINARY_EVENT,
-      data: new ArrayBuffer(2),
+      data: ['a', new ArrayBuffer(2)],
+      id: 0,
+      nsp: '/'
+    };
+    helpers.test_bin(packet);
+  });
+
+  it('encodes a TypedArray', function() {
+    var array = new Uint8Array(5);
+    for (var i = 0; i < array.length; i++) array[i] = i;
+
+    var packet = {
+      type: parser.BINARY_EVENT,
+      data: ['a', array],
       id: 0,
       nsp: '/'
     };
@@ -17,7 +30,7 @@ describe('parser', function() {
   it('encodes ArrayBuffers deep in JSON', function() {
     var packet = {
       type: parser.BINARY_EVENT,
-      data: {a: 'hi', b: {why: new ArrayBuffer(3)}, c: {a: 'bye', b: { a: new ArrayBuffer(6)}}},
+      data: ['a', {a: 'hi', b: {why: new ArrayBuffer(3)}, c: {a: 'bye', b: { a: new ArrayBuffer(6)}}}],
       id: 999,
       nsp: '/deep'
     };
@@ -27,7 +40,7 @@ describe('parser', function() {
   it('encodes deep binary JSON with null values', function() {
     var packet = {
       type: parser.BINARY_EVENT,
-      data: {a: 'b', c: 4, e: {g: null}, h: new ArrayBuffer(9)},
+      data: ['a', {a: 'b', c: 4, e: {g: null}, h: new ArrayBuffer(9)}],
       nsp: '/',
       id: 600
     };
