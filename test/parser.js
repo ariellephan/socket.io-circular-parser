@@ -1,8 +1,6 @@
-var parser = require('../index.js');
-var expect = require('expect');
-var helpers = require('./helpers.js');
-var encode = parser.encode;
-var decode = parser.decode;
+const expect = require('expect');
+const parser = require('../index.js');
+const helpers = require('./helpers.js');
 
 describe('parser', function(){
 
@@ -12,6 +10,8 @@ describe('parser', function(){
     expect(parser.EVENT).toBeA('number');
     expect(parser.ACK).toBeA('number');
     expect(parser.ERROR).toBeA('number');
+    expect(parser.BINARY_EVENT).toBeA('number');
+    expect(parser.BINARY_ACK).toBeA('number');
   });
 
   it('encodes connection', function(){
@@ -93,4 +93,13 @@ describe('parser', function(){
       })
     })
   })
+
+  it('returns an error packet on parsing error', function(done){
+    var decoder = new parser.Decoder();
+    decoder.on('decoded', function(packet) {
+      expect(packet).toEqual({ type: 4, data: 'parser error' });
+      done();
+    });
+    decoder.add('442["some","data"');
+  });
 });
